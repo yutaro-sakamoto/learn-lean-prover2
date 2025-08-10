@@ -99,3 +99,74 @@ def fst {α : Type u} {β : Type v} (p : Prod α β) : α :=
 def snd {α : Type u} {β : Type v} (p : Prod α β) : β :=
   match p with
   | Prod.mk a b => b
+
+def prod_example (p : Bool × Nat) : Nat :=
+  Prod.casesOn (motive := fun _ => Nat) p (fun b n => cond b (2 * n) (2 * n + 1))
+
+#eval prod_example (true, 3)
+#eval prod_example (false, 3)
+
+def sum_example (s : Sum Nat Nat) : Nat :=
+  Sum.casesOn (motive := fun _ => Nat) s
+    (2 * ·)
+    (2 * · + 1)
+
+#eval sum_example (Sum.inl 3)
+#eval sum_example (Sum.inr 3)
+
+def sum_example2 (s : Sum Nat Nat) : Nat :=
+  match s with
+    | Sum.inl a => 2 * a
+    | Sum.inr b => 2 * b + 1
+
+#eval sum_example2 (Sum.inl 3)
+#eval sum_example2 (Sum.inr 3)
+
+structure Color where
+  (red: Nat) (green : Nat) (blue : Nat)
+  deriving Repr
+
+def yellow := Color.mk 255 255 0
+
+#print Color.red
+#eval Color.red yellow
+
+def partial_function (α : Type u) (β : Type v) := α → Option β
+
+def compose_partial_functions (g : partial_function β γ) (f : partial_function α β)
+    : partial_function α γ :=
+  fun x =>
+  match f x with
+  | none => none
+  | some y => g y
+
+theorem assoc_compose_parital_function
+  {α : Type u1}
+  {β : Type u2}
+  {γ : Type u3}
+  {δ : Type u4}
+  (h : partial_function γ δ)
+  (g : partial_function β γ)
+  (f : partial_function α β) :
+  compose_partial_functions h (compose_partial_functions g f) = compose_partial_functions (compose_partial_functions h g) f := by
+  funext x
+  simp [compose_partial_functions]
+  cases f x with
+  | none => rfl
+  | some y =>
+    cases g y with
+    | none => rfl
+    | some z => rfl
+
+example
+  (h : partial_function γ δ)
+  (g : partial_function β γ)
+  (f : partial_function α β) :
+  compose_partial_functions h (compose_partial_functions g f) = compose_partial_functions (compose_partial_functions h g) f := by
+  funext x
+  simp [compose_partial_functions]
+  cases f x with
+  | none => rfl
+  | some y =>
+    cases g y
+    all_goals rfl
