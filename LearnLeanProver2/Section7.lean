@@ -35,7 +35,7 @@ def numberOfDay (d : Weekday) : Nat :=
 #eval numberOfDay Weekday.monday
 #eval numberOfDay tuesday
 
-set_option pp.all true
+--set_option pp.all true
 #print numberOfDay
 --#print numberOfDay.match_1
 #print Weekday.casesOn
@@ -170,3 +170,14 @@ example
   | some y =>
     cases g y
     all_goals rfl
+
+def injective (f : α → β) := ∀ x : α, ∀ y : α, (f x = f y → x = y)
+
+example (g : β → γ) (f : α → β)
+    : injective g ∧ injective f → injective (g ∘ f) := by
+  intro ⟨hg, hf⟩
+  intro x y
+  intro h
+  apply hf
+  apply hg
+  exact h
