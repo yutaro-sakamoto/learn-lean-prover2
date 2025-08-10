@@ -1,0 +1,10 @@
+name = "learn-lean-prover2"
+version = "0.1.0"
+defaultTargets = ["learn-lean-prover2"]
+
+[[lean_lib]]
+name = "LearnLeanProver2"
+
+[[lean_exe]]
+name = "learn-lean-prover2"
+root = "Main"
