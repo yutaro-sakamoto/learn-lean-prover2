@@ -310,3 +310,35 @@ example (as bs cs : List α)
   by induction as with
   | nil => rfl
   | cons a as ih => simp [my_cons_append, ih]
+
+universe u
+def list_length (as : List α) : Nat :=
+  match as with
+  | nil => 0
+  | cons _ as => 1 + list_length as
+
+theorem list_length_append (as bs : List α) : list_length (append as bs) = list_length as + list_length bs :=
+  match as with
+  | nil =>
+    show list_length (append nil bs) = list_length nil + list_length bs from
+    calc list_length (append nil bs)
+      _ = list_length bs := by rw [my_nil_append]
+      _ = 0 + list_length bs := by rw [Nat.zero_add]
+      _ = list_length nil + list_length bs := rfl
+  | cons a as =>
+    show list_length (append (cons a as) bs) = list_length (cons a as) + list_length bs from
+    calc list_length (append (cons a as) bs)
+      _ = list_length (cons a (append as bs)) := by rw [my_cons_append]
+      _ = 1 + list_length (append as bs) := rfl
+      _ = 1 + (list_length as + list_length bs) := by rw [list_length_append]
+      _ = 1 + list_length as + list_length bs := by rw [Nat.add_assoc]
+      _ = list_length (cons a as) + list_length bs := rfl
+
+theorem cons_list_length (a : α) (as : List α) : list_length (cons a as) = 1 + list_length as := by
+  rfl
+
+theorem list_length_append2 (as bs : List α) : list_length (append as bs) = list_length as + list_length bs :=
+  match as with
+  | nil => by simp [my_nil_append]; rfl
+  | cons a as => by
+    simp [my_cons_append, cons_list_length, list_length_append2, Nat.add_assoc]
