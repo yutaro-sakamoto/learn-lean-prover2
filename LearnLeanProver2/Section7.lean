@@ -181,3 +181,57 @@ example (g : β → γ) (f : α → β)
   apply hf
   apply hg
   exact h
+
+#check @Nat.rec
+
+theorem add_zero (m : Nat) : m + 0 = m := rfl
+
+open Nat
+
+theorem my_add_succ (m n : Nat) : m + Nat.succ n = Nat.succ (m + n) := rfl
+theorem zero_add (n : Nat) : 0 + n = n :=
+  Nat.recOn (motive := fun x => 0 + x = x)
+   n
+   (show 0 + 0 = 0 from rfl)
+   (fun (n : Nat) (ih : 0 + n = n) =>
+    show 0 + succ n = succ n from
+    calc 0 + succ n
+      _ = succ (0 + n) := rfl
+      _ = succ n       := by rw [ih])
+
+theorem zero_add_induction_step (n : Nat) (ih : 0 + n = n) : 0 + succ n = succ n := by
+  rw [my_add_succ, ih]
+
+example (n : Nat) : 0 + n = n :=
+  Nat.recOn (motive := fun x => 0 + x = x) n
+  rfl
+  zero_add_induction_step
+
+theorem add_assoc (m n k : Nat) : m + n + k = m + (n + k) :=
+  Nat.recOn (motive := fun k => m + n + k = m + (n + k)) k
+    (show m + n + 0 = m + (n + 0) from rfl)
+    (fun k (ih : m + n + k = m + (n + k)) =>
+      show m + n + succ k = m + (n + succ k) from
+      calc m + n + succ k
+      _ = succ (m + n + k) := rfl
+      _ = succ (m + (n + k)) := by rw [ih]
+      _ = m + succ (n + k) := rfl
+      _ = m + (n + succ k) := rfl
+    )
+
+theorem add_assoc_step {m n : Nat} (k : Nat) (ih : m + n + k = m + (n + k))
+    : m + n + Nat.succ k = m + (n + Nat.succ k) := by
+  rw [my_add_succ]
+  rw [ih]
+  rw [←my_add_succ]
+  rw [←my_add_succ]
+
+theorem add_assoc2 (m n k : Nat) : m + n + k = m + (n + k) :=
+  Nat.recOn (motive := fun k => m + n + k = m + (n + k)) k
+  rfl
+  add_assoc_step
+
+theorem add_assoc3 (m n k : Nat) : m + n + k = m + (n + k) :=
+  Nat.recOn (motive := fun k => m + n + k = m + (n + k)) k
+    rfl
+    (fun k ih => by simp [add_succ (m + n) k, ih]; rfl)
