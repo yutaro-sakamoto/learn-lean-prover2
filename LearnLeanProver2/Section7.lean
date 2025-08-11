@@ -235,3 +235,78 @@ theorem add_assoc3 (m n k : Nat) : m + n + k = m + (n + k) :=
   Nat.recOn (motive := fun k => m + n + k = m + (n + k)) k
     rfl
     (fun k ih => by simp [add_succ (m + n) k, ih]; rfl)
+
+theorem my_succ_add (n m : Nat) : succ n + m = succ (n + m) :=
+  Nat.recOn (motive := fun x => succ n + x = succ (n + x)) m
+    (show succ n + 0 = succ (n + 0) from rfl)
+    (fun (m : Nat) (ih : succ n + m = succ (n + m)) =>
+     show succ n + succ m = succ (n + succ m) from
+     calc succ n + succ m
+       _ = succ (succ n + m)   := rfl
+       _ = succ (succ (n + m)) := by rw [ih]
+       _ = succ (n + succ m)   := rfl)
+
+theorem add_comm (m n : Nat) : m + n = n + m :=
+  Nat.recOn (motive := fun x => m + x = x + m) n
+   (show m + 0 = 0 + m by rw [Nat.zero_add, Nat.add_zero])
+   (fun (n : Nat) (ih : m + n = n + m) =>
+    show m + succ n = succ n + m from
+    calc m + succ n
+      _ = succ (m + n) := rfl
+      _ = succ (n + m) := by rw [ih]
+      _ = succ n + m   := by rw [my_succ_add])
+
+theorem my_succ_add2 (n m : Nat) : succ n + m = succ (n + m) :=
+  Nat.recOn (motive := fun x => succ n + x = succ (n + x)) m
+    rfl
+    (fun m ih => by simp only [add_succ, ih])
+
+open List
+def append (as bs : List α) : List α :=
+  match as with
+  | nil => bs
+  | cons a as => cons a (append as bs)
+
+theorem my_nil_append (as : List α) : append nil as = as :=
+  rfl
+
+theorem my_cons_append (a : α) (as bs : List α)
+    : append (cons a as) bs = cons a (append as bs) :=
+  rfl
+
+theorem my_append_nil (as : List α) : append as nil = as :=
+  match as with
+  | nil => rfl
+  | cons a as =>
+    show append (cons a as) nil = cons a as from
+    calc append (cons a as) nil
+      _ = cons a (append as nil) := my_cons_append a as nil
+      _ = cons a as              := by rw [my_append_nil as]
+
+example (as : List α) : append as nil = as := by
+  induction as with
+  | nil => rfl
+  | cons a as ih => rw [my_cons_append a as nil, ih]
+
+theorem append_assoc (as bs cs : List α)
+    : append (append as bs) cs = append as (append bs cs) :=
+  match as with
+  | nil => rfl
+    --show append (append nil bs) cs = append nil (append bs cs) from
+    --calc append (append nil bs) cs
+    --  _ = append bs cs := by rw [my_nil_append bs]
+    --  _ = append nil (append bs cs) := my_nil_append (append bs cs)
+  | cons a as =>
+    --show append (append (cons a as) bs) cs = append (cons a as) (append bs cs) from
+    --calc append (append (cons a as) bs) cs
+    --  _ = append (cons a (append as bs)) cs := by rw [my_cons_append]
+    --  _ = cons a (append (append as bs) cs) := by rw [my_cons_append]
+    --  _ = cons a (append as (append bs cs)) := by rw [append_assoc as bs cs]
+    --  _ = append (cons a as) (append bs cs) := by rw [my_cons_append]
+    by simp [my_cons_append, append_assoc]
+
+example (as bs cs : List α)
+    : append (append as bs) cs = append as (append bs cs) :=
+  by induction as with
+  | nil => rfl
+  | cons a as ih => simp [my_cons_append, ih]
