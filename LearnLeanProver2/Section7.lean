@@ -342,3 +342,180 @@ theorem list_length_append2 (as bs : List α) : list_length (append as bs) = lis
   | nil => by simp [my_nil_append]; rfl
   | cons a as => by
     simp [my_cons_append, cons_list_length, list_length_append2, Nat.add_assoc]
+
+inductive BinaryTree where
+  | leaf : BinaryTree
+  | root (left : BinaryTree) (right : BinaryTree)
+
+inductive CBTree where
+  | leaf : CBTree
+  | sup : (Nat → CBTree) → CBTree
+
+namespace CBTree
+def succ (t : CBTree) : CBTree :=
+  sup (fun _ => t)
+
+def toCBTree : Nat → CBTree
+  | 0 => leaf
+  | n + 1 => succ (toCBTree n)
+
+def omega : CBTree :=
+  sup toCBTree
+
+end CBTree
+
+example (p : Nat → Prop) (hz : p 0) (hs : ∀ n, p (Nat.succ n)) : ∀ n , p n := by
+  intro n
+  cases n
+  . exact hz
+  . apply hs
+
+example (n : Nat) (h : n ≠ 0) : succ (pred n)  = n := by
+  cases n with
+  | zero => apply absurd rfl h
+  | succ m => rfl
+
+namespace tmp
+def f (n : Nat) : Nat := by
+  cases n; exact 3; exact 7
+
+example : f 0 = 3 := rfl
+example : f 5 = 7 := rfl
+end tmp
+
+section tmp2
+def Tuple (α : Type) (n : Nat) :=
+  { as : List α // as.length = n }
+
+def f {n : Nat} (t : Tuple α n) : Nat := by
+  cases n; exact 3; exact 7
+
+def myTuple : Tuple Nat 3 :=
+  ⟨[0, 1, 2], rfl⟩
+
+example : f myTuple = 7 :=
+  rfl
+end tmp2
+
+inductive Foo where
+  | bar1 : Nat → Nat → Foo
+  | bar2 : Nat → Nat → Nat → Foo
+
+def silly (x : Foo) : Nat := by
+  cases x with
+  | bar1 a b => exact b
+  | bar2 c d e => exact e
+
+#eval silly (Foo.bar1 1 2)
+#eval silly (Foo.bar2 3 4 5)
+
+def silly2 (x : Foo) : Nat := by
+  cases x with
+  | bar2 c d e => exact e
+  | bar1 a b => exact b
+
+def silly3 (x : Foo) : Nat := by
+  cases x
+  case bar2 c d e => exact e
+  case bar1 a b => exact b
+
+example (p : Nat → Prop) (hz : p 0) (hs : ∀ n, p (succ n)) (m k : Nat)
+    : p (m + 3 * k) := by
+  cases m + 3 * k
+  . exact hz
+  . apply hs
+
+example (p : Nat → Prop) (hz : p 0) (hs : ∀ n, p (succ n)) (m k : Nat)
+    : p (m + 3 * k) := by
+  generalize m + 3 * k = n
+  cases n
+  . exact hz
+  . apply hs
+
+example (p : Prop) (m n : Nat) (h₁ : m < n → p) (h₂ : m ≥ n → p) : p := by
+  cases Nat.lt_or_ge m n
+  case inl hlt => exact h₁ hlt
+  case inr hge => exact h₂ hge
+
+theorem t1 (m n : Nat) : m - n = 0 ∨ m ≠ n := by
+  cases Decidable.em (m = n) with
+  | inl heq => rw [heq]; apply Or.inl; exact Nat.sub_self n
+  | inr hne => apply Or.inr; exact hne
+
+#print axioms t1
+
+theorem zero_add1 (n : Nat) : 0 + n = n := by
+  induction n with
+  | zero => rfl
+  | succ n ih => rw [Nat.add_succ, ih]
+
+theorem zero_add2 (n : Nat) : 0 + n = n := by
+  induction n
+  case zero => rfl
+  case succ n ih => rw [Nat.add_succ, ih]
+
+open Nat
+
+example (x : Nat) {y : Nat} (h : y > 0) : x % y < y := by
+  induction x, y using Nat.mod.inductionOn with
+  | ind x y h₁ ih =>
+    rw [Nat.mod_eq_sub_mod h₁.2]
+    exact ih h
+  | base x y h₁ =>
+    have : ¬ 0 < y ∨ ¬ y ≤ x := Iff.mp (Decidable.not_and_iff_or_not ..) h₁
+    match this with
+    | Or.inl h₁ => exact absurd h h₁
+    | Or.inr h₁ =>
+      have hgt : y > x := Nat.gt_of_not_le h₁
+      rw [← Nat.mod_eq_of_lt hgt] at hgt
+      assumption
+
+example : p ∨ q → q ∨ p := by
+  intro h
+  match h with
+  | Or.inl _ => apply Or.inr; assumption
+  | Or.inr h2 => apply Or.inl; assumption
+
+example : s ∧ q ∧ r → p ∧ r → q ∧ p := by
+  intro ⟨_, ⟨hq, _⟩⟩ ⟨hp, _⟩
+  exact ⟨hq, hp⟩
+
+example :
+  (fun (x : Nat × Nat) (y : Nat × Nat) => x.1 + y.2)
+  =
+  (fun (x : Nat × Nat) (z : Nat × Nat) => z.2 + x.1) := by
+  funext (a, b) (c, d)
+  show a + d = d + a
+  rw [Nat.add_comm]
+
+example (m n k : Nat) (h : succ (succ m) = succ (succ n))
+    : n + k = m + k := by
+  injection h with h'
+  injection h' with h''
+  rw [h'']
+
+example (m n : Nat) (h : succ m = 0) : n = n + 7 := by
+  injection h
+
+example (m n : Nat) (h : succ m = 0) : n = n + 7 := by
+  contradiction
+
+example (h : 7 = 4) : False := by
+  contradiction
+
+inductive MyVector (α : Type u) : Nat → Type u where
+  | nil : MyVector α 0
+  | cons : α → {n : Nat} → MyVector α n -> MyVector α (n + 1)
+
+universe v
+#check (@Eq.rec : {α : Sort u} → {a : α} → {motive : (x : α) → a = x → Sort v}
+                  → motive a rfl → {b : α} → (h : a = b) → motive b h)
+
+theorem trans {α : Type u} {a b c : α} (h₁ : Eq a b) (h₂ : Eq b c) : Eq a c :=
+  match h₁ with
+  | rfl => match h₂ with
+    | rfl => rfl
+
+theorem mycongr {α β : Type u} {a b : α} (f : α → β) (h : Eq a b) : Eq (f a) (f b) :=
+  match h with
+  | rfl => rfl
