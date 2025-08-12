@@ -519,3 +519,16 @@ theorem trans {α : Type u} {a b c : α} (h₁ : Eq a b) (h₂ : Eq b c) : Eq a 
 theorem mycongr {α β : Type u} {a b : α} (f : α → β) (h : Eq a b) : Eq (f a) (f b) :=
   match h with
   | rfl => rfl
+
+mutual
+  inductive Even : Nat → Prop where
+  | even_zero : Even 0
+  | even_succ : (n : Nat) -> Odd n -> Even (n + 1)
+
+  inductive Odd : Nat → Prop where
+  | odd_succ : (n : Nat) → Even n → Odd (n + 1)
+end
+
+open Even Odd
+
+example : Even 2 := even_succ 1 (odd_succ 0 even_zero)
