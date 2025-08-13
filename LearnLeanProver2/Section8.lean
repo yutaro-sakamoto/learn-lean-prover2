@@ -270,3 +270,198 @@ where
     match n with
     | 0   => simp [replicate2.loop]
     | n+1 => simp +arith [replicate2.loop, aux n]
+
+namespace tmp
+variable (α : Sort u)
+variable (r : α → α → Prop)
+
+#check (Acc r : α → Prop)
+#check (WellFounded r : Prop)
+end tmp
+
+mutual
+  def even : Nat → Bool
+    | 0 => true
+    | n + 1 => odd n
+  def odd : Nat → Bool
+    | 0 => false
+    | n + 1 => even n
+end
+
+example : even (a + 1) = odd a := by
+  simp [even]
+
+example : odd (a + 1) = even a := by
+  simp [odd]
+
+theorem even_eq_not_odd : ∀ a, even a = not (odd a) := by
+  intro a; induction a
+  . simp [even, odd]
+  . simp [even, odd, *]
+
+mutual
+  inductive Even : Nat → Prop where
+    | even_zero : Even 0
+    | even_succ : ∀ n, Odd n -> Even (n + 1)
+  inductive Odd : Nat → Prop where
+    | odd_succ : ∀ n, Even n → Odd (n + 1)
+end
+
+open Even Odd
+theorem not_odd_odd_zero : ¬ Odd 0 :=
+  fun h => nomatch h
+
+theorem even_of_odd_succ : ∀ n, Odd (n + 1) → Even n
+  | _, odd_succ n h => h
+
+theorem odd_of_even_succ : ∀ n, Even (n + 1) → Odd n
+  | _, even_succ n h => h
+
+#check odd_succ
+#check even_succ
+#check odd_of_even_succ
+
+inductive Term where
+  | const : String → Term
+  | app : String → List Term → Term
+
+namespace Term
+
+mutual
+  def numConsts : Term → Nat
+    | const _ => 1
+    | app _ cs => numConstsLst cs
+  def numConstsLst : List Term → Nat
+    | [] => 0
+    | c :: cs => numConsts c + numConstsLst cs
+end
+
+def sample := app "f" [app "g" [const "x"], const "y"]
+def sample2 := [app "g" [const "x", const "y"], const "y"]
+
+#eval numConsts sample
+#eval numConstsLst sample2
+
+mutual
+  def replaceConst (a b : String) : Term → Term
+    | const c => if a == c then const b else const c
+    | app f cs => app f (replaceConstLst a b cs)
+  def replaceConstLst (a b : String) : List Term → List Term
+    | [] => []
+    | c :: cs => replaceConst a b c :: replaceConstLst a b cs
+end
+
+mutual
+  theorem numConsts_replaceConst (a b : String) (e : Term)
+      : numConsts (replaceConst a b e) = numConsts e := by
+    match e with
+    | const c => simp [replaceConst]; split <;> simp [numConsts]
+    | app f cs => simp [replaceConst, numConsts, numConsts_replaceConstLst a b cs]
+  theorem numConsts_replaceConstLst (a b : String) (es : List Term)
+      : numConstsLst (replaceConstLst a b es) = numConstsLst es := by
+    match es with
+    | [] => simp [replaceConstLst, numConstsLst]
+    | c :: cs =>
+      simp [replaceConstLst, numConstsLst, numConsts_replaceConst a b c,
+        numConsts_replaceConstLst a b cs]
+end
+end Term
+
+inductive MyVector (α : Type u) : Nat → Type u
+  | nil : MyVector α 0
+  | cons : α → {n : Nat} → MyVector α n → MyVector α (n + 1)
+
+namespace MyVector
+#check @MyVector.casesOn
+
+def tailAux (v : MyVector α m) : m = n + 1 → MyVector α n :=
+  MyVector.casesOn (motive := fun x _ => x = n + 1 → MyVector α n) v
+  (fun h : 0 = n + 1 => Nat.noConfusion h)
+  (fun (a : α) (m : Nat) (as : MyVector α m) =>
+   fun (h : m + 1 = n + 1) =>
+    Nat.noConfusion h (fun h1 : m = n => h1 ▸ as))
+
+def tail (v : MyVector α (n + 1)) : MyVector α n :=
+  tailAux v rfl
+
+def add [Add α] : {n : Nat} → MyVector α n → MyVector α n → MyVector α n
+  | 0, nil, nil => nil
+  | _ + 1, cons a as, cons b bs => cons (a + b) (add as bs)
+
+def add2 [Add α] : {n : Nat} → MyVector α n → MyVector α n → MyVector α n
+  | .(_), nil, nil => nil
+  | .(_), cons a as, cons b bs => cons (a + b) (add as bs)
+
+def add3 [Add α] : {n : Nat} → MyVector α n → MyVector α n → MyVector α n
+  | _, nil, nil => nil
+  | _, cons a as, cons b bs => cons (a + b) (add as bs)
+
+end MyVector
+
+inductive ImageOf {α β : Type u} (f : α → β) : β → Type u where
+  | imf : (a : α) → ImageOf f (f a)
+
+open ImageOf
+
+def inverse {f : α → β} : (b : β) → ImageOf f b → α
+  | .(f a), imf a => a
+
+def inverse' {f : α → β} : (b : β) → ImageOf f b → α
+  | _, imf a => a
+
+def isNotZero (m : Nat) : Bool :=
+  match m with
+  | 0 => false
+  | _+1 => true
+
+def myfilter (p : α → Bool) : List α → List α
+  | [] => []
+  | a :: as =>
+    match p a with
+    | true => a :: myfilter p as
+    | false => myfilter p as
+
+def foo6 (n : Nat) (b c : Bool) :=
+  5 + match n - 5, b && c with
+      | 0,   true  => 0
+      | m+1, true  => m + 7
+      | 0,   false => 5
+      | m+1, false => m + 3
+
+#eval foo6 7 true false
+
+example : foo6 7 true false = 9 := rfl
+
+def bar₁ : Nat × Nat → Nat
+  | (m, n) => m + n
+
+def bar₂ (p : Nat × Nat) : Nat :=
+  match p with
+  | (m, n) => m + n
+
+def bar₃ : Nat × Nat → Nat :=
+  fun (m, n) => m + n
+
+def bar₄ (p : Nat × Nat) : Nat :=
+  let (m, n) := p; m + n
+
+section
+  variable (p q : Nat → Prop)
+
+  example : (∃ x, p x) → (∃ y, q y) → ∃ x y, p x ∧ q y
+    | ⟨x, px⟩, ⟨y, qy⟩ => ⟨x, y, px, qy⟩
+
+  example (h₀ : ∃ x, p x) (h₁ : ∃ y, q y)
+      : ∃ x y, p x ∧ q y :=
+    match h₀, h₁ with
+    | ⟨x, px⟩, ⟨y, qy⟩ => ⟨x, y, px, qy⟩
+
+  example : (∃ x, p x) → (∃ y, q y) → ∃ x y, p x ∧ q y :=
+    fun ⟨x, px⟩ ⟨y, qy⟩ => ⟨x, y, px, qy⟩
+
+  example (h₀ : ∃ x, p x) (h₁ : ∃ y, q y)
+      : ∃ x y, p x ∧ q y :=
+    let ⟨x, px⟩ := h₀
+    let ⟨y, qy⟩ := h₁
+    ⟨x, y, px, qy⟩
+end
