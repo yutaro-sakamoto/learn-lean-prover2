@@ -23,3 +23,6 @@ instance : MyAdd2 Int where
 
 instance : MyAdd2 Float where
   add := Float.add
+
+def double2 [MyAdd2 a] (x : a) :a :=
+  MyAdd2.add x x
