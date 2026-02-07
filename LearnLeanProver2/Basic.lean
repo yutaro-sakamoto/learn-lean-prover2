@@ -1,4 +1,5 @@
 import LearnLeanProver2.Sub
+import LearnLeanProver2.InteractCommand
 
 def hello := "world"
 
