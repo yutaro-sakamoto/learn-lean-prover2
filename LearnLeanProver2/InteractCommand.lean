@@ -23,3 +23,31 @@ def fac : Nat → Nat
   | n + 1 => (n + 1) * fac n
 
 #eval fac 5
+
+def main : IO Unit :=
+  IO.println "Hello"
+
+#eval main
+
+inductive Role where
+  | admin
+  | write
+  | read
+
+#eval Role.admin
+
+instance : Repr Role where
+  reprPrec := fun _role _ => "hogehoge"
+
+#eval Role.admin
+
+/--
+info: Nat : Type
+-/
+#guard_msgs in #check Nat
+
+variable (α : Type)
+
+#guard fac 5 == 120
+
+example (α : Type) (l : List α) : [] ⊆ l := by simp
