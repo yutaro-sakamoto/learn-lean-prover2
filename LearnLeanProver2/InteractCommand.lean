@@ -51,3 +51,16 @@ variable (α : Type)
 #guard fac 5 == 120
 
 example (α : Type) (l : List α) : [] ⊆ l := by simp
+
+#print Or
+
+#print Nat.add_succ
+
+#print And
+
+#reduce 1 + 3
+#reduce (fun x => x + 1) 3
+
+def addOne (x : Nat) := x + 1
+#reduce addOne
+#reduce addOne ∘ addOne
